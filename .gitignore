@@ -1,0 +1,28 @@
+# Environment variables
+.env
+
+# n8n data
+.n8n/
+n8n/backups/*
+!n8n/backups/.gitkeep
+
+# Docker volumes
+postgres_data/
+redis_data/
+qdrant_data/
+ollama_data/
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
