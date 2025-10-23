@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  # n8n workflow automation
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: agentic-rag-n8n
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=admin123
+      - N8N_HOST=0.0.0.0
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - NODE_ENV=production
+      - WEBHOOK_URL=http://localhost:5678/
+      - GENERIC_TIMEZONE=America/Sao_Paulo
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./n8n-nodes:/home/node/.n8n/custom
+      - ./workflows:/workflows
+    networks:
+      - agentic-rag-network
+    depends_on:
+      - postgres
+
+  # PostgreSQL for n8n
+  postgres:
+    image: postgres:15-alpine
+    container_name: agentic-rag-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=n8n
+      - POSTGRES_PASSWORD=n8n
+      - POSTGRES_DB=n8n
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - agentic-rag-network
+
+  # RAG API Backend
+  rag-api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: agentic-rag-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - CHROMA_PERSIST_DIR=/data/chroma
+      - REDIS_URL=redis://redis:6379
+    volumes:
+      - ./api:/app
+      - rag_data:/data
+    networks:
+      - agentic-rag-network
+    depends_on:
+      - redis
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # Redis for caching
+  redis:
+    image: redis:7-alpine
+    container_name: agentic-rag-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - agentic-rag-network
+
+networks:
+  agentic-rag-network:
+    driver: bridge
+
+volumes:
+  n8n_data:
+  postgres_data:
+  redis_data:
+  rag_data:

@@ -1,0 +1,91 @@
+{
+  "name": "Agentic Task Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        }
+      },
+      "id": "schedule-1",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeCommand",
+        "command": "=echo 'Processing task at ' && date"
+      },
+      "id": "execute-1",
+      "name": "Execute Command",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "resource": "agentTask",
+        "operation": "execute",
+        "prompt": "Analyze the system logs and summarize any errors or warnings from the last hour",
+        "ragEndpoint": "http://localhost:8000",
+        "model": "claude-3-5-sonnet-20241022",
+        "maxTokens": 4096,
+        "systemPrompt": "You are a system monitoring assistant. Analyze logs and provide clear, actionable insights."
+      },
+      "id": "agent-1",
+      "name": "Claude Agent Task",
+      "type": "n8n-nodes-claude-rag.claudeRag",
+      "typeVersion": 1,
+      "position": [650, 300],
+      "credentials": {
+        "claudeApi": {
+          "id": "1",
+          "name": "Claude API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendMessage",
+        "channel": "#monitoring",
+        "text": "={{$json[\"response\"]}}"
+      },
+      "id": "slack-1",
+      "name": "Send to Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 1,
+      "position": [850, 300],
+      "credentials": {
+        "slackApi": {
+          "id": "2",
+          "name": "Slack"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [[{ "node": "Execute Command", "type": "main", "index": 0 }]]
+    },
+    "Execute Command": {
+      "main": [[{ "node": "Claude Agent Task", "type": "main", "index": 0 }]]
+    },
+    "Claude Agent Task": {
+      "main": [[{ "node": "Send to Slack", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "2",
+  "id": "2",
+  "meta": {
+    "instanceId": "example"
+  },
+  "tags": []
+}

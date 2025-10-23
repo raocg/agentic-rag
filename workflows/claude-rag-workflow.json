@@ -1,0 +1,73 @@
+{
+  "name": "Claude RAG Workflow Example",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "webhook-rag",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-1",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "claude-rag-webhook"
+    },
+    {
+      "parameters": {
+        "resource": "ragQuery",
+        "operation": "query",
+        "prompt": "={{$json[\"body\"][\"query\"]}}",
+        "ragEndpoint": "http://localhost:8000",
+        "knowledgeBaseId": "default",
+        "model": "claude-3-5-sonnet-20241022",
+        "maxTokens": 2048,
+        "temperature": 0.7,
+        "additionalFields": {
+          "topK": 5,
+          "includeSources": true
+        }
+      },
+      "id": "claude-rag-1",
+      "name": "Claude RAG Query",
+      "type": "n8n-nodes-claude-rag.claudeRag",
+      "typeVersion": 1,
+      "position": [450, 300],
+      "credentials": {
+        "claudeApi": {
+          "id": "1",
+          "name": "Claude API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{$json}}"
+      },
+      "id": "respond-1",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [650, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[{ "node": "Claude RAG Query", "type": "main", "index": 0 }]]
+    },
+    "Claude RAG Query": {
+      "main": [[{ "node": "Respond to Webhook", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "1",
+  "id": "1",
+  "meta": {
+    "instanceId": "example"
+  },
+  "tags": []
+}
